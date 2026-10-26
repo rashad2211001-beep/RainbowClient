@@ -15,22 +15,54 @@ jobs:
         distribution: 'temurin'
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-    - name: Fix Files and Build
+    - name: Fix and Build
       run: |
         # تصليح ملف التصميم
         rm -f RainbowClient/app/src/main/res/layout/actividad_principal.xml
         mkdir -p RainbowClient/app/src/main/res/layout
         echo '<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"></RelativeLayout>' > RainbowClient/app/src/main/res/layout/actividad_principal.xml
         
-        # تصليح ملف SocketService (تعديل الهيدرز)
+        # تصليح ملف SocketService
         sed -i 's/Map<String, String> headers = new HashMap<>();/Map<String, List<String>> headers = new HashMap<>();/' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
         sed -i 's/headers.put("user-agent", Build.MANUFACTURER + " " + Build.MODEL + " | Android " + Build.VERSION.RELEASE);/headers.put("user-agent", Arrays.asList(Build.MANUFACTURER + " " + Build.MODEL + " | Android " + Build.VERSION.RELEASE));/' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
-        
-        # إضافة الـ imports في السطر التاني (بعد الـ package مباشرة)
         sed -i '2i import java.util.List;\nimport java.util.Arrays;' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
         
-        # كتابة build.gradle.kts
-        printf 'plugins {\n    id("com.android.application")\n}\n\nandroid {\n    namespace = "com.rainbow.client"\n    compileSdk = 34\n    defaultConfig {\n        applicationId = "com.rainbow.client"\n        minSdk = 24\n        targetSdk = 34\n    }\n}\n\nconfigurations.all {\n    resolutionStrategy {\n        force("org.jetbrains.kotlin:kotlin-stdlib:1.8.22")\n    }\n}\n' > RainbowClient/app/build.gradle.kts
+        # كتابة build.gradle.kts صح
+        cat > RainbowClient/app/build.gradle.kts << 'EOF'
+        plugins {
+            id("com.android.application")
+        }
+
+        android {
+            namespace = "com.rainbow.client"
+            compileSdk = 34
+            defaultConfig {
+                applicationId = "com.rainbow.client"
+                minSdk = 24
+                targetSdk = 34
+            }
+            compileOptions {
+                sourceCompatibility = JavaVersion.VERSION_17
+                targetCompatibility = JavaVersion.VERSION_17
+            }
+        }
+
+        dependencies {
+            implementation("io.socket:socket.io-client:2.1.0") {
+                exclude(group = "org.json", module = "json")
+            }
+            implementation("androidx.appcompat:appcompat:1.6.1")
+            implementation("androidx.core:core:1.12.0")
+        }
+
+        configurations.all {
+            resolutionStrategy {
+                force("org.jetbrains.kotlin:kotlin-stdlib:1.8.22")
+                force("org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.8.22")
+                force("org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.8.22")
+            }
+        }
+        EOF
         
         # البناء
         cd "RainbowClient"
