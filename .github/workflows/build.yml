@@ -15,11 +15,18 @@ jobs:
         distribution: 'temurin'
     - name: Setup Gradle
       uses: gradle/actions/setup-gradle@v3
-    - name: Fix Layout File and Strings
+    - name: Fix Files
       run: |
-        rm -rf RainbowClient/app/src/main/res/layout/actividad_principal.xml
+        # حل مشكلة الـ Strings
+        rm -f RainbowClient/app/src/main/res/layout/actividad_principal.xml
         mkdir -p RainbowClient/app/src/main/res/layout
-        echo '<?xml version="1.0" encoding="utf-8"?><RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"></RelativeLayout>' > RainbowClient/app/src/main/res/layout/actividad_principal.xml
+        echo '<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent"></RelativeLayout>' > RainbowClient/app/src/main/res/layout/actividad_principal.xml
+        # حل مشكلة الكوتلن والهيدرز
+        sed -i 's/Map<String, String> headers = new HashMap<>();/Map<String, List<String>> headers = new HashMap<>();/' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
+        sed -i 's/headers.put("user-agent", Build.MANUFACTURER + " " + Build.MODEL + " | Android " + Build.VERSION.RELEASE);/headers.put("user-agent", Arrays.asList(Build.MANUFACTURER + " " + Build.MODEL + " | Android " + Build.VERSION.RELEASE));/' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
+        sed -i '1i import java.util.List;\nimport java.util.Arrays;' RainbowClient/app/src/main/java/com/ejemplo/rainbowclient/SocketService.java
+        # تصليح الكوتلن
+        echo 'plugins { id("com.android.application") } android { namespace = "com.rainbow.client"; compileSdk = 34; defaultConfig { applicationId = "com.rainbow.client"; minSdk = 24; targetSdk = 34 } } configurations.all { resolutionStrategy { force("org.jetbrains.kotlin:kotlin-stdlib:1.8.22") } }' > RainbowClient/app/build.gradle.kts
     - name: Build with Gradle
       run: |
         cd "RainbowClient"
